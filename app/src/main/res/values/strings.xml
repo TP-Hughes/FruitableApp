@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">Fruitable</string>
+    <string name="vegetable">Vegetable</string>
+    <string name="fruit">Fruit</string>
+    <string name="v_total">Total Vegetables Eaten</string>
+    <string name="f_total">Total Fruit Eaten</string>
+    <string name="display_v_total">%1$d</string>
+    <string name="display_f_total">%1$d</string>
+    <string name="display_sum_total">Total: %1$d</string>
+    <string name="undo_button">Undo</string>
+    <string name="streak">Streak: %1$d</string>
+    <string name="date_today">Friday 16/02</string>
+</resources>
