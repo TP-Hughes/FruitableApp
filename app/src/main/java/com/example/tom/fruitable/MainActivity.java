@@ -105,6 +105,11 @@ public class MainActivity extends AppCompatActivity {
         editor = sharedPref.edit();
         editor.apply();
 
+        fruitTotal = sharedPref.getInt("fruitTotal", 0);
+        vegTotal = sharedPref.getInt("vegTotal", 0);
+        sumTotal = sharedPref.getInt("sumTotal", 0);
+        streak = sharedPref.getInt("streak", 0);
+
         createScreen();
     }
 
@@ -183,10 +188,6 @@ public class MainActivity extends AppCompatActivity {
             dailyUpdate();
         }
         else{
-            fruitTotal = sharedPref.getInt("fruitTotal", 0);
-            vegTotal = sharedPref.getInt("vegTotal", 0);
-            sumTotal = sharedPref.getInt("sumTotal", 0);
-            streak = sharedPref.getInt("streak", 0);
             setDate();
             updateHomeScreen();
             saveHomeScreen();
