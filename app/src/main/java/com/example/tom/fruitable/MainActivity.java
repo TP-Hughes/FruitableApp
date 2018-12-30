@@ -26,12 +26,16 @@ import java.util.Locale;
  */
 public class MainActivity extends AppCompatActivity {
 
-    static int fruitTotal;
-    static int vegTotal;
-    int sumTotal;     //sumTotal = fruitTotal + vegTotal
-    int streak;
+    private int fruitTotal;
+    private int vegTotal;
+    private int sumTotal() {
+        return vegTotal + fruitTotal;
+    }
+    private int streak;
+    public static final String FRUIT = "Fruit";
+    public static final String VEG = "Veg";
 
-    ArrayList<Portion> actions = new ArrayList<>();
+    ArrayList<String> actions = new ArrayList<>();
 
     TextView vegTotalDisplay;
     TextView fruitTotalDisplay;
@@ -58,32 +62,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * This enum defines the two types of portion that can be input
-      */
-    public enum Portion {
-        FRUIT, VEG;
-
-        /**
-         * This method reduces the totals of the veg or fruit respectively,
-         * depending on which it is called on.
-         */
-        public void reduceTotal(){
-            switch(this){
-                case VEG: {
-                    vegTotal--;
-                    break;
-                }
-                case FRUIT: {
-                    fruitTotal--;
-                    break;
-                }
-                default:
-
-                    break;
-            }
-        }
-    }
 
     /**
      * This method initialises the display and the necessary variables when the app is created.
@@ -107,7 +85,6 @@ public class MainActivity extends AppCompatActivity {
 
         fruitTotal = sharedPref.getInt("fruitTotal", 0);
         vegTotal = sharedPref.getInt("vegTotal", 0);
-        sumTotal = sharedPref.getInt("sumTotal", 0);
         streak = sharedPref.getInt("streak", 0);
 
         createScreen();
@@ -141,7 +118,7 @@ public class MainActivity extends AppCompatActivity {
      *
      * @return boolean This returns whether it is a new day or not
      */
-    private boolean newDay(){
+    private boolean newDay() {
         Calendar cal = Calendar.getInstance();
         Date now = Calendar.getInstance().getTime();
         cal.setTime(now);
@@ -150,9 +127,9 @@ public class MainActivity extends AppCompatActivity {
         int thisMonth = cal.get(Calendar.MONTH);
         int thisYear = cal.get(Calendar.YEAR);
 
-        int savedDay  = sharedPref.getInt("savedDay",0);
-        int savedMonth = sharedPref.getInt("savedMonth",0);
-        int savedYear = sharedPref.getInt("savedYear",0);
+        int savedDay = sharedPref.getInt("savedDay", 0);
+        int savedMonth = sharedPref.getInt("savedMonth", 0);
+        int savedYear = sharedPref.getInt("savedYear", 0);
         return (thisDay != savedDay || thisMonth != savedMonth || thisYear != savedYear);
     }
 
@@ -160,15 +137,14 @@ public class MainActivity extends AppCompatActivity {
      * This method is called at the start of a new day and resets all values to zero.
      * If the sum total is less than 5, the streak broken and reset to 0
      */
-    private void dailyUpdate(){
+    private void dailyUpdate() {
         //streak update
-        if (sumTotal <5){
+        if (sumTotal() < 5) {
             streak = 0;
         }
         //reset values
         fruitTotal = 0;
         vegTotal = 0;
-        sumTotal = 0;
         actions.clear();
         setDate();
 
@@ -177,24 +153,23 @@ public class MainActivity extends AppCompatActivity {
         saveHomeScreen();
     }
 
-     /**
+    /**
      * This method initialises all the variables when onCreate is called.
      * If it is the same day as the last time the app was open
      * the values are taken from shared preferences.
      * If the day is different they're reset to 0.
      */
-    private void createScreen(){
-        if (newDay()){
+    private void createScreen() {
+        if (newDay()) {
             dailyUpdate();
-        }
-        else{
+        } else {
             setDate();
             updateHomeScreen();
             saveHomeScreen();
         }
 
     }
-    
+
     /**
      * This method is called on the press of the undo button, and removes the last
      * added portion of fruit or veg from the totals. The array list of actions
@@ -204,51 +179,66 @@ public class MainActivity extends AppCompatActivity {
      *
      * @param view required as an on click method
      */
-    public void undo(View view){
-        if(!actions.isEmpty()){ //if actions is empty there's no action to undo
-            (actions.get(actions.size() - 1)).reduceTotal(); //knock one off either fruit or veg totals
-            sumTotal--;
-            updateStreak(sumTotal+1,sumTotal); //check if undo has taken total to <5
-            updateHomeScreen();
-
+    public void undo(View view) {
+        if (!actions.isEmpty()) { //if actions is empty there's no action to undo
+            reduceTotal(); //knock one off either fruit or veg totals
+            updateStreak(sumTotal() + 1, sumTotal()); //check if undo has taken total to <5
             actions.remove(actions.size() - 1); //remove the last action from the array list
-            saveHomeScreen();
         }
     }
+    private  void reduceTotal(){
+        String action = (actions.get(actions.size() - 1));
+        if(action.equals(FRUIT)){
+            fruitTotal--;
 
-     /**
+            fruitTotalDisplay.setText(getString(R.string.display_f_total, fruitTotal));
+            sumTotalDisplay.setText((getString(R.string.display_sum_total,sumTotal())));
+            editor.putInt("fruitTotal", fruitTotal);
+            editor.apply();
+        } else if (action.equals(VEG)){
+            vegTotal--;
+
+            vegTotalDisplay.setText(getString(R.string.display_v_total, vegTotal));
+            sumTotalDisplay.setText((getString(R.string.display_sum_total,sumTotal())));
+            editor.putInt("vegTotal", vegTotal);
+            editor.apply();
+        }
+    }
+    /**
      * This method is called when the user taps the vegetable button, it
-      * adds one to the veg total and sum total , updates the home screen and
-      * records the action in the array list.
+     * adds one to the veg total and sum total , updates the home screen and
+     * records the action in the array list.
      *
-     *  @param view required as an on click method
+     * @param view required as an on click method
      */
-    public void addVeg(View view){
+    public void addVeg(View view) {
         vegTotal++;
-        sumTotal++;
 
-        updateStreak(sumTotal-1, sumTotal);
-        updateHomeScreen();
+        updateStreak(sumTotal() - 1, sumTotal());
+        vegTotalDisplay.setText(getString(R.string.display_v_total, vegTotal));
+        sumTotalDisplay.setText((getString(R.string.display_sum_total,sumTotal())));
 
-        actions.add(Portion.VEG);   //record the action in the array list
-        saveHomeScreen();
-     }
+        actions.add(VEG);   //record the action in the array list
+        editor.putInt("vegTotal", vegTotal);
+        editor.apply();
+    }
 
-     /**
-      * This method is called when the user taps the fruit button, it
-      * adds one to the fruit total and sum total, updates the home screen and
-      * records the action in the array list.
+    /**
+     * This method is called when the user taps the fruit button, it
+     * adds one to the fruit total and sum total, updates the home screen and
+     * records the action in the array list.
      *
-     *  @param view required as an on click method
+     * @param view required as an on click method
      */
-    public void addFruit(View view){
+    public void addFruit(View view) {
         fruitTotal++;
-        sumTotal++;
-        updateStreak(sumTotal-1, sumTotal);
-        updateHomeScreen();
+        updateStreak(sumTotal() - 1, sumTotal());
+        fruitTotalDisplay.setText(getString(R.string.display_f_total, fruitTotal));
+        sumTotalDisplay.setText((getString(R.string.display_sum_total,sumTotal())));
 
-        actions.add(Portion.FRUIT);     //record the action in the array list
-        saveHomeScreen();
+        actions.add(FRUIT);     //record the action in the array list
+        editor.putInt("fruitTotal", fruitTotal);
+        editor.apply();
     }
 
     /**
@@ -256,7 +246,7 @@ public class MainActivity extends AppCompatActivity {
      * It also saves a copy of the date in shared preferences
      * for the purpose of detecting a change in the date in newDay.
      */
-    private void setDate(){
+    private void setDate() {
         Calendar cal = Calendar.getInstance();
         Date today = cal.getTime(); //getting date
         cal.setTime(today);
@@ -264,12 +254,12 @@ public class MainActivity extends AppCompatActivity {
         int savedDay = cal.get(Calendar.DAY_OF_MONTH);
         int savedMonth = cal.get(Calendar.MONTH);
         int savedYear = cal.get(Calendar.YEAR);
-        editor.putInt("savedDay",savedDay);
-        editor.putInt("savedMonth",savedMonth);
-        editor.putInt("savedYear",savedYear);
+        editor.putInt("savedDay", savedDay);
+        editor.putInt("savedMonth", savedMonth);
+        editor.putInt("savedYear", savedYear);
         editor.apply(); //save copy of the date to shared preferences
 
-        SimpleDateFormat formatter = new SimpleDateFormat("EEEE dd/MM",Locale.ENGLISH);
+        SimpleDateFormat formatter = new SimpleDateFormat("EEEE dd/MM", Locale.ENGLISH);
         String date = formatter.format(today); //format date
         dateToday.setText(date); //display
     }
@@ -279,37 +269,29 @@ public class MainActivity extends AppCompatActivity {
      * If the streak is broken it is reset to zero in dailyUpdate.
      *
      * @param prevTotal An integer defining the previous sumTotal
-     * @param newTotal An integer defining the current sumTotal
+     * @param newTotal  An integer defining the current sumTotal
      */
-    private void updateStreak(int prevTotal, int newTotal){
-        if (prevTotal==4 && newTotal==5){
+    private void updateStreak(int prevTotal, int newTotal) {
+        if (prevTotal == 4 && newTotal == 5) {
             streak++;   //if it hits five from below => +1
         }
-        if (prevTotal==5 && newTotal ==4){
+        if (prevTotal == 5 && newTotal == 4) {
             streak--;   //if its four from above => -1
         }
+        streakDisplay.setText(getString(R.string.streak, streak));
+        editor.putInt("streak", streak);
+        editor.apply();
     }
-
-    /**
-     * This method updates the display of the home screen with the up to date values.
-     * It displays the up to date values of the fruit total, veg total, sum total and the current streak.
-     */
+    private void saveHomeScreen(){
+        editor.putInt("fruitTotal", fruitTotal);
+        editor.putInt("vegTotal", vegTotal);
+        editor.putInt("streak", streak);
+        editor.apply();
+    }
     private void updateHomeScreen(){
         fruitTotalDisplay.setText(getString(R.string.display_f_total, fruitTotal));
         vegTotalDisplay.setText(getString(R.string.display_v_total, vegTotal));
-        sumTotalDisplay.setText(getString(R.string.display_sum_total, sumTotal));
+        sumTotalDisplay.setText((getString(R.string.display_sum_total,sumTotal())));
         streakDisplay.setText(getString(R.string.streak, streak));
-    }
-
-    /**
-     * This method saves the variables displayed on the home screen to shared preferences.
-     * It saves the fruit total, veg total, sum total and the current streak.
-     */
-    private void saveHomeScreen(){
-        editor.putInt("fruitTotal",fruitTotal);
-        editor.putInt("vegTotal",vegTotal);
-        editor.putInt("sumTotal",sumTotal);
-        editor.putInt("streak",streak);
-        editor.apply();
     }
 }
