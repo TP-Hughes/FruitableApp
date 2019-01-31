@@ -9,11 +9,11 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.Locale;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 
 /**
  * The MainActivity of my Fruitable App allows users to track how many portions
@@ -56,8 +56,9 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onReceive(final Context context, Intent intent) {
-            if (newDay()) {
-                dailyUpdate();
+            long daysPassed = daysPassed();
+            if (daysPassed>=1) {
+                dailyUpdate(daysPassed);
             }
         }
     }
@@ -98,8 +99,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         registerReceiver(mDateReceiver, new IntentFilter(Intent.ACTION_TIME_TICK));
-        if (newDay()) {
-            dailyUpdate();
+        long daysPassed = daysPassed();
+        if (daysPassed!=0) {
+            dailyUpdate(daysPassed);
         }
     }
 
@@ -114,32 +116,28 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * This method checks if the day has changed
+     * This method checks if the day has changed and how many days have passed between the saved date and actual date
      *
-     * @return boolean This returns whether it is a new day or not
+     * @return boolean This returns the number of days passed
      */
-    private boolean newDay() {
-        Calendar cal = Calendar.getInstance();
-        Date now = Calendar.getInstance().getTime();
-        cal.setTime(now);
+    private long daysPassed() {
+        LocalDate today = LocalDate.now();
 
-        int thisDay = cal.get(Calendar.DAY_OF_MONTH);
-        int thisMonth = cal.get(Calendar.MONTH);
-        int thisYear = cal.get(Calendar.YEAR);
+        int savedDay = sharedPref.getInt("savedDay", 1);
+        int savedMonth = sharedPref.getInt("savedMonth", 1);
+        int savedYear = sharedPref.getInt("savedYear", 2019);
+        LocalDate savedDate = LocalDate.of(savedYear,savedMonth,savedDay);
 
-        int savedDay = sharedPref.getInt("savedDay", 0);
-        int savedMonth = sharedPref.getInt("savedMonth", 0);
-        int savedYear = sharedPref.getInt("savedYear", 0);
-        return (thisDay != savedDay || thisMonth != savedMonth || thisYear != savedYear);
+        return (ChronoUnit.DAYS.between(savedDate,today));
     }
 
     /**
      * This method is called at the start of a new day and resets all values to zero.
      * If the sum total is less than 5, the streak broken and reset to 0
      */
-    private void dailyUpdate() {
+    private void dailyUpdate(long daysPassed) {
         //streak update
-        if (sumTotal() < 5) {
+        if (daysPassed > 1 || daysPassed < 0|| sumTotal() < 5) {
             streak = 0;
         }
         //reset values
@@ -160,15 +158,13 @@ public class MainActivity extends AppCompatActivity {
      * If the day is different they're reset to 0.
      */
     private void createScreen() {
-        if (newDay()) {
-            dailyUpdate();
-        } else {
-            setDate();
+            //create the screen - don't save a new date
+            LocalDate today = LocalDate.now();
+            displayDate(today);
             updateHomeScreen();
             saveHomeScreen();
         }
 
-    }
 
     /**
      * This method is called on the press of the undo button, and removes the last
@@ -247,23 +243,23 @@ public class MainActivity extends AppCompatActivity {
      * for the purpose of detecting a change in the date in newDay.
      */
     private void setDate() {
-        Calendar cal = Calendar.getInstance();
-        Date today = cal.getTime(); //getting date
-        cal.setTime(today);
+        LocalDate today = LocalDate.now();
 
-        int savedDay = cal.get(Calendar.DAY_OF_MONTH);
-        int savedMonth = cal.get(Calendar.MONTH);
-        int savedYear = cal.get(Calendar.YEAR);
+        int savedDay = today.getDayOfMonth();
+        int savedMonth = today.getMonthValue();
+        int savedYear = today.getYear();
         editor.putInt("savedDay", savedDay);
         editor.putInt("savedMonth", savedMonth);
         editor.putInt("savedYear", savedYear);
         editor.apply(); //save copy of the date to shared preferences
 
-        SimpleDateFormat formatter = new SimpleDateFormat("EEEE dd/MM", Locale.ENGLISH);
-        String date = formatter.format(today); //format date
+       displayDate(today);
+    }
+    private void displayDate(LocalDate today){
+        DateTimeFormatter formatter =  DateTimeFormatter.ofPattern("EEEE dd/MM", Locale.ENGLISH);
+        String date = today.format(formatter); //format date
         dateToday.setText(date); //display
     }
-
     /**
      * This method checks when 5 or more portions of fruit and veg are eaten and adds 1 to the streak.
      * If the streak is broken it is reset to zero in dailyUpdate.
